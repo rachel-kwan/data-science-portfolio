@@ -6,7 +6,7 @@ author:
 date: "04/13/2021"
 header-includes:
    - \usepackage{float}
-output: html_document
+output: pdf_document
 bibliography: echo.bib
 csl: apa-with-abstract.csl
 ---
@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(magrittr)
 library(tidyverse)
+library(here)
 ```
 
 # Abstract 
@@ -28,7 +29,7 @@ The Echocardiogram Data Set contains information from 132 patients who have all 
 The main problem presented by this dataset is to classify whether or not a patient will survive for at least one year after having a heart attack [@data]. To prepare the data for classification, the variables _mult_, _name_, and _group_ were removed since they are not useful for our analysis, as well as _wallmotion.score_ since _wallmotion.index_ is used instead. Finally, the variables _survival_ and _alive_ were used to derive our target variable (aliveat1), so these two variables will also be removed for analysis.
 
 ```{r include=FALSE}
-echo <- read.csv("echocardiogram.csv")
+echo <- read.csv(here("Echocardiogram Data Analysis", "echocardiogram.csv"))
 ```
 
 ```{r include=FALSE}
