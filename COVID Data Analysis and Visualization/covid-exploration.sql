@@ -176,7 +176,7 @@ select *
 from COVID.deaths deaths join COVID.vaccinations vax
 on deaths.location = vax.location and deaths.record_date = vax.record_date;
 
--- Population vs. vaccinations
+-- 1. Population vs. vaccinations
 -- rolling_vaccinations: Rolling count of vaccinations (by country)
 select deaths.continent, deaths.location, deaths.record_date, deaths.population, vax.new_vaccinations,
 SUM(vax.new_vaccinations) over (partition by deaths.location order by deaths.location, deaths.record_date) as rolling_vaccinations
@@ -186,7 +186,7 @@ where deaths.continent is not null
 order by 2,3;
 
 -- Perform further calculations on 'rolling_vaccinations' using CTE
--- percent_vaccinated: Total vaccinations / Population
+-- percent_vaccinated: Rolling vaccinations / Population
 -- max_percent_vaccinated: Current percentage of population vaccinated (by country)
 with Pop_Vax (continent, location, record_date, population, new_vaccinations, rolling_vaccinations) as
 	(select deaths.continent, deaths.location, deaths.record_date, deaths.population, vax.new_vaccinations,
@@ -221,10 +221,34 @@ order by 2,3;
 select *, (rolling_vaccinations/population)*100 as percent_vaccinated
 from PercentPopulationVaccinated;
 
--- Create views to store data for visualizations in Tableau
+-- Create view for PercentPopulationVaccinated
 create view PercentPopulationVaccinated as
 select deaths.continent, deaths.location, deaths.record_date, deaths.population, vax.new_vaccinations,
 SUM(vax.new_vaccinations) over (partition by deaths.location order by deaths.location, deaths.record_date) as rolling_vaccinations
 from COVID.deaths deaths join COVID.vaccinations vax
 on deaths.location = vax.location and deaths.record_date = vax.record_date
 where deaths.continent is not null;
+
+-- 2. Population vs. cases
+-- rolling_cases: Rolling count of cases (by country)
+-- percent_infected: Rolling cases / Population
+create view PercentPopulationInfected as
+with Pop_Infected (continent, location, record_date, population, new_cases, rolling_cases) as
+	(select continent, location, record_date, population, new_cases,
+	SUM(new_cases) over (partition by location order by location, record_date) as rolling_cases
+	from COVID.deaths
+	where continent is not null)
+select *, (rolling_cases/population)*100 as percent_infected
+from Pop_Infected;
+
+-- 3. Population vs. deaths
+-- rolling_deaths: Rolling count of deaths (by country)
+-- percent_dead: Rolling deaths / Population
+create view PercentPopulationDead as
+with Pop_Dead (continent, location, record_date, population, new_deaths, rolling_deaths) as
+	(select continent, location, record_date, population, new_deaths,
+	SUM(new_deaths) over (partition by location order by location, record_date) as rolling_deaths
+	from COVID.deaths
+	where continent is not null)
+select *, (rolling_deaths/population)*100 as percent_dead
+from Pop_Dead;
