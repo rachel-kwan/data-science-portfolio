@@ -215,8 +215,16 @@ select deaths.continent, deaths.location, deaths.record_date, deaths.population,
 SUM(vax.new_vaccinations) over (partition by deaths.location order by deaths.location, deaths.record_date) as rolling_vaccinations
 from COVID.deaths deaths join COVID.vaccinations vax
 on deaths.location = vax.location and deaths.record_date = vax.record_date
-where deaths.continent is not null;
+where deaths.continent is not null
+order by 2,3;
 
 select *, (rolling_vaccinations/population)*100 as percent_vaccinated
 from PercentPopulationVaccinated;
 
+-- Create views to store data for visualizations in Tableau
+create view PercentPopulationVaccinated as
+select deaths.continent, deaths.location, deaths.record_date, deaths.population, vax.new_vaccinations,
+SUM(vax.new_vaccinations) over (partition by deaths.location order by deaths.location, deaths.record_date) as rolling_vaccinations
+from COVID.deaths deaths join COVID.vaccinations vax
+on deaths.location = vax.location and deaths.record_date = vax.record_date
+where deaths.continent is not null;
