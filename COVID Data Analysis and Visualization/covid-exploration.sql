@@ -124,6 +124,48 @@ SET life_expectancy = NULLIF(life_expectancy, '');
 update COVID.vaccinations
 SET human_development_index = NULLIF(human_development_index, '');
 
+-- For Tableau
+
+-- 1. Total deaths and infections by country
+select location, continent, population, MAX(total_cases) as country_cases, MAX(total_deaths) as country_deaths,
+(MAX(total_deaths)/MAX(total_cases))*100 as country_death_rate,
+(MAX(total_cases)/population)*100 as country_infection_rate
+from COVID.deaths
+where continent is not null
+group by continent, location, population
+order by country_deaths desc;
+
+-- 2. Total deaths and infections by continent
+with continent_totals (location, continent, country_cases, country_deaths) as
+	(select location, continent, MAX(total_cases) as country_cases, MAX(total_deaths) as country_deaths
+	from COVID.deaths
+	where continent is not null
+	group by continent, location)
+select continent, SUM(country_cases) as continent_cases, SUM(country_deaths) as continent_deaths,
+(SUM(country_deaths)/SUM(country_cases))*100 continent_death_rate
+from continent_totals
+group by continent;
+
+-- 3. Total deaths and infections globally
+with continent_totals (location, continent, country_cases, country_deaths) as
+    (select location, continent, MAX(total_cases) as country_cases, MAX(total_deaths) as country_deaths
+	from COVID.deaths
+	where continent is not null
+	group by continent, location),
+totals (continent, continent_cases, continent_deaths) as
+	(select continent, SUM(country_cases) as continent_cases, SUM(country_deaths) as continent_deaths
+	from continent_totals
+	group by continent)
+select SUM(continent_cases) as cases_world, SUM(continent_deaths) as deaths_world,
+(SUM(continent_deaths)/SUM(continent_cases))*100 as world_death_rate
+from totals;
+
+-- 4. Population vs. cases (Percent Infected/Infection Rate)
+select continent, location, record_date, population, total_cases, (total_cases/population)*100 as infection_rate
+from COVID.deaths
+where continent is not null;
+
+-- Extra examples
 
 select location, continent, record_date, new_cases, total_deaths, population
 from COVID.deaths
@@ -162,7 +204,16 @@ where continent is null
 group by location
 order by max_deaths desc;
 
--- GLOBAL DATA
+select SUM(new_cases) as total_cases, SUM(new_deaths) as total_deaths, (SUM(new_deaths)/SUM(new_cases))*100 as death_rate
+from COVID.deaths
+where continent is not null
+order by 1,2;
+
+-- Total cases and death count by continent
+select continent, SUM(new_cases) as total_cases, SUM(new_deaths) as total_deaths
+from COVID.deaths
+where continent is not null
+group by continent;
 
 -- Daily total new cases and deaths
 select record_date, SUM(new_cases) as total_new_cases, SUM(new_deaths) as total_new_deaths, (SUM(new_deaths)/SUM(new_cases))*100 as death_rate
