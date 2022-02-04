@@ -124,7 +124,7 @@ SET life_expectancy = NULLIF(life_expectancy, '');
 update COVID.vaccinations
 SET human_development_index = NULLIF(human_development_index, '');
 
--- For Tableau
+-- FOR TABLEAU
 
 -- 1. Total deaths and infections by country
 select location, continent, population, MAX(total_cases) as country_cases, MAX(total_deaths) as country_deaths,
@@ -165,7 +165,29 @@ select continent, location, record_date, population, total_cases, (total_cases/p
 from COVID.deaths
 where continent is not null;
 
--- Extra examples
+-- 5. Total vaccinations by country
+select deaths.location, deaths.continent, deaths.population, MAX(vax.people_fully_vaccinated) as country_vax,
+(MAX(vax.people_fully_vaccinated)/deaths.population)*100 as country_vax_rate
+from COVID.deaths deaths join COVID.vaccinations vax
+on deaths.location = vax.location and deaths.record_date = vax.record_date
+where deaths.continent is not null
+group by deaths.continent, deaths.location, deaths.population
+order by country_vax desc;
+
+-- 6. Total vaccinations by continent
+with continent_vax_totals (location, continent, population, country_vax, country_vax_rate) as
+	(select deaths.location, deaths.continent, deaths.population, MAX(vax.people_fully_vaccinated) as country_vax,
+	(MAX(vax.people_fully_vaccinated)/deaths.population)*100 as country_vax_rate
+	from COVID.deaths deaths join COVID.vaccinations vax
+	on deaths.location = vax.location and deaths.record_date = vax.record_date
+	where deaths.continent is not null
+	group by deaths.continent, deaths.location, deaths.population)
+select continent, SUM(country_vax) as continent_vax,
+(SUM(country_vax)/SUM(Population))*100 continent_vax_rate
+from continent_vax_totals
+group by continent;
+
+-- EXTRA EXAMPLES
 
 select location, continent, record_date, new_cases, total_deaths, population
 from COVID.deaths
@@ -227,7 +249,7 @@ select *
 from COVID.deaths deaths join COVID.vaccinations vax
 on deaths.location = vax.location and deaths.record_date = vax.record_date;
 
--- 1. Population vs. vaccinations
+-- Population vs. vaccinations
 -- rolling_vaccinations: Rolling count of vaccinations (by country)
 select deaths.continent, deaths.location, deaths.record_date, deaths.population, vax.new_vaccinations,
 SUM(vax.new_vaccinations) over (partition by deaths.location order by deaths.location, deaths.record_date) as rolling_vaccinations
@@ -280,7 +302,7 @@ from COVID.deaths deaths join COVID.vaccinations vax
 on deaths.location = vax.location and deaths.record_date = vax.record_date
 where deaths.continent is not null;
 
--- 2. Population vs. cases
+-- Population vs. cases
 -- rolling_cases: Rolling count of cases (by country)
 -- percent_infected: Rolling cases / Population
 create view PercentPopulationInfected as
@@ -292,7 +314,7 @@ with Pop_Infected (continent, location, record_date, population, new_cases, roll
 select *, (rolling_cases/population)*100 as percent_infected
 from Pop_Infected;
 
--- 3. Population vs. deaths
+-- Population vs. deaths
 -- rolling_deaths: Rolling count of deaths (by country)
 -- percent_dead: Rolling deaths / Population
 create view PercentPopulationDead as
