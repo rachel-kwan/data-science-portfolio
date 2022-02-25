@@ -406,3 +406,55 @@ join Highschooler H on many_likes.ID2 = H.ID;
 
 # 1 - For every situation where student A likes student B, but student B likes a different student C,
 # return the names and grades of A, B, and C.
+select H1.name, H1.grade, H2.name, H2.grade, H3.name, H3.grade
+from
+	(select L1.ID1, L1.ID2, L2.ID2 as other
+	from Likes L1 join Likes L2 on L1.ID2 = L2.ID1
+	where L1.ID1 != L2.ID2) as likes_triangle
+left join Highschooler H1 on likes_triangle.ID1 = H1.ID
+left join Highschooler H2 on likes_triangle.ID2 = H2.ID
+left join Highschooler H3 on likes_triangle.other = H3.ID;
+
+# 2 - Students for whom all of their friends are in different grades from themselves.
+# Return the students' names and grades.
+select diff_grade.name, diff_grade.grade
+from
+	(select distinct H1.name, H1.grade
+	from Highschooler H1 join Friend F on H1.ID = F.ID1
+	join Highschooler H2 on F.ID2 = H2.ID
+	where H1.grade != H2.grade) as diff_grade
+left join 
+	(select distinct H1.name, H1.grade
+	from Highschooler H1 join Friend F on H1.ID = F.ID1
+	join Highschooler H2 on F.ID2 = H2.ID
+	where H1.grade = H2.grade) as same_grade
+on diff_grade.name = same_grade.name and diff_grade.grade = same_grade.grade
+where same_grade.name is null;
+
+# 3 - Average number of friends per student?
+select avg(friend_count.count)   
+from
+	(select count(ID1) as count
+	from Friend
+	group by ID1) as friend_count;
+    
+# 4 - Find the number of students who are either friends with Cassandra or are friends of friends of Cassandra.
+# Do not count Cassandra, even though technically she is a friend of a friend.
+select count(distinct F2.ID1) + count(distinct F2.ID2)
+from Highschooler H join Friend F1 on H.ID = F1.ID1
+join Friend F2 on F1.ID2 = F2.ID1
+where H.name like 'Cassandra' and F1.ID1 != F2.ID2;
+
+# 5 - Find the name and grade of the student(s) with the greatest number of friends.
+select H.name, H.grade
+from
+	(select ID1, count(ID1) as count
+	from Friend
+	group by ID1
+	having count = 
+	(select max(friend_count.count)
+	from
+		(select count(ID1) as count
+		from Friend
+		group by ID1) as friend_count)) as max_count
+left join Highschooler H on H.ID = max_count.ID1;
