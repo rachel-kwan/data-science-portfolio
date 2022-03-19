@@ -1,6 +1,6 @@
 ## My data science portfolio 🌟
 
-Welcome! Here you'll find my personal projects, as well as some academic work.
+Hello! Thanks for stopping by my data science portfolio. Here you'll find my personal projects, as well as some academic work.
 
 - COVID Data Analysis and Visualization
   - SQL coding techniques (aggregate functions, CTEs, TempTables, joins, views)
